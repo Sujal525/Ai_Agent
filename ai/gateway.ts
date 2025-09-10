@@ -1,17 +1,35 @@
 import type { JSONValue } from 'ai'
 import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai'
 import { createGatewayProvider } from '@ai-sdk/gateway'
+import { openai } from '@ai-sdk/openai'
 import { Models } from './constants'
 
-const gateway = createGatewayProvider({
+const useDirectOpenAI = !process.env.AI_GATEWAY_BASE_URL || process.env.USE_DIRECT_OPENAI === 'true'
+
+const gateway = useDirectOpenAI ? null : createGatewayProvider({
   baseURL: process.env.AI_GATEWAY_BASE_URL,
 })
 
 export async function getAvailableModels() {
-  const response = await gateway.getAvailableModels()
-  return response.models
-    .map((model) => ({ id: model.id, name: model.name }))
-    .concat([{ id: Models.OpenAIGPT5, name: 'GPT-5' }])
+  if (useDirectOpenAI) {
+    return [
+      { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
+      { id: 'gpt-4', name: 'GPT-4' },
+    ]
+  }
+  
+  try {
+    const response = await gateway!.getAvailableModels()
+    return response.models
+      .map((model) => ({ id: model.id, name: model.name }))
+      .concat([{ id: Models.OpenAIGPT5, name: 'GPT-5' }])
+  } catch (error) {
+    console.error('Failed to fetch models from gateway:', error)
+    return [
+      { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
+      { id: 'gpt-4', name: 'GPT-4' },
+    ]
+  }
 }
 
 export interface ModelOptions {

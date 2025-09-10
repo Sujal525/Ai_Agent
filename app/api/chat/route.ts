@@ -6,6 +6,7 @@ import {
   stepCountIs,
   streamText,
 } from 'ai'
+import { openai } from '@ai-sdk/openai'
 import { DEFAULT_MODEL } from '@/ai/constants'
 import { NextResponse } from 'next/server'
 import { getAvailableModels, getModelOptions } from '@/ai/gateway'
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
       originalMessages: messages,
       execute: ({ writer }) => {
         const result = streamText({
-          ...getModelOptions(modelId, { reasoningEffort }),
+          model: openai(modelId || 'gpt-3.5-turbo'),
           system: prompt,
           messages: convertToModelMessages(
             messages.map((message) => {

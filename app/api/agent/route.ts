@@ -6,7 +6,7 @@ import { LambdaClient, ListFunctionsCommand } from '@aws-sdk/client-lambda'
 import { CostExplorerClient, GetCostAndUsageCommand } from '@aws-sdk/client-cost-explorer'
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY || '',
 })
 
 interface Message {
@@ -18,13 +18,20 @@ export async function POST(req: NextRequest) {
   try {
     const { messages, action } = await req.json()
 
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: 'OpenAI API key not configured. Please add OPENAI_API_KEY to environment variables.' },
+        { status: 500 }
+      )
+    }
+
     if (action === 'aws') {
       const awsData = await getAWSResources()
       return NextResponse.json({ data: awsData })
     }
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
+      model: 'gpt-3.5-turbo',
       messages: [
         {
           role: 'system',
@@ -42,10 +49,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       message: completion.choices[0].message.content,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Agent API Error:', error)
     return NextResponse.json(
-      { error: 'Failed to process request' },
+      { 
+        error: error.message || 'Failed to process request',
+        details: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+      },
       { status: 500 }
     )
   }
