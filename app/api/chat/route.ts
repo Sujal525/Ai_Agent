@@ -29,10 +29,18 @@ export async function POST(req: Request) {
   const [models, { messages, modelId = DEFAULT_MODEL, reasoningEffort }] =
     await Promise.all([getAvailableModels(), req.json() as Promise<BodyData>])
 
+  // Use fallback if no OpenAI key or model not found
+  if (!process.env.OPENAI_API_KEY) {
+    return NextResponse.json(
+      { error: `OpenAI API key not configured. Please add OPENAI_API_KEY to environment variables.` },
+      { status: 400 }
+    )
+  }
+
   const model = models.find((model) => model.id === modelId)
   if (!model) {
     return NextResponse.json(
-      { error: `Model ${modelId} not found.` },
+      { error: `Model ${modelId} not found. Available models: ${models.map(m => m.id).join(', ')}` },
       { status: 400 }
     )
   }

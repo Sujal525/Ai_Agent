@@ -51,6 +51,13 @@ export async function POST(req: NextRequest) {
     })
   } catch (error: any) {
     console.error('Agent API Error:', error)
+    
+    // If OpenAI fails due to quota, use mock responses
+    if (error.message?.includes('quota') || error.code === 'insufficient_quota' || !process.env.OPENAI_API_KEY) {
+      const { POST: mockHandler } = await import('./mock-route')
+      return mockHandler(req)
+    }
+    
     return NextResponse.json(
       { 
         error: error.message || 'Failed to process request',

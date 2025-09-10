@@ -80,9 +80,14 @@ export function AgentChat() {
 
         const data = await response.json()
         
+        let content = data.message || 'I encountered an error. Please try again.'
+        if (data.isMockResponse) {
+          content += '\n\n_Note: Currently running in demo mode with mock responses._'
+        }
+        
         const assistantMessage: Message = {
           role: 'assistant',
-          content: data.message || 'I encountered an error. Please try again.',
+          content,
           timestamp: new Date(),
         }
         setMessages((prev) => [...prev, assistantMessage])
