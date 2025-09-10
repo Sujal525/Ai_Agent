@@ -21,10 +21,11 @@ export function LoginForm() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px]" aria-describedby="login-description">
         <DialogHeader>
           <DialogTitle>Login to AI Agent</DialogTitle>
         </DialogHeader>
+        <p id="login-description" className="sr-only">Login form to access the AI Agent platform</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>

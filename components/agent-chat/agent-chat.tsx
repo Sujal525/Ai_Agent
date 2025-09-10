@@ -91,7 +91,7 @@ export function AgentChat() {
       console.error('Error:', error)
       const errorMessage: Message = {
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please check your configuration and try again.',
+        content: 'Sorry, I encountered an error. Please make sure your OpenAI API key is configured correctly in the environment variables. If the issue persists, try refreshing the page.',
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, errorMessage])
