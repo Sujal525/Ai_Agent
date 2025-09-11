@@ -21,29 +21,36 @@ interface BodyData {
 }
 
 export async function POST(req: Request) {
-  const checkResult = await checkBotId()
-  if (checkResult.isBot) {
-    return NextResponse.json({ error: `Bot detected` }, { status: 403 })
-  }
+  try {
+    const checkResult = await checkBotId()
+    if (checkResult.isBot) {
+      return NextResponse.json({ error: `Bot detected` }, { status: 403 })
+    }
 
-  const [models, { messages, modelId = DEFAULT_MODEL, reasoningEffort }] =
-    await Promise.all([getAvailableModels(), req.json() as Promise<BodyData>])
+    const [models, { messages, modelId = DEFAULT_MODEL, reasoningEffort }] =
+      await Promise.all([getAvailableModels(), req.json() as Promise<BodyData>])
 
-  // Use fallback if no OpenAI key or model not found
-  if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json(
-      { error: `OpenAI API key not configured. Please add OPENAI_API_KEY to environment variables.` },
-      { status: 400 }
-    )
-  }
+    // Check for API key configuration
+    if (!process.env.OPENAI_API_KEY && !process.env.AI_GATEWAY_BASE_URL) {
+      return NextResponse.json(
+        { 
+          error: `Configuration Required: Either OPENAI_API_KEY or Vercel AI Gateway must be configured.`,
+          type: 'configuration_error'
+        },
+        { status: 400 }
+      )
+    }
 
-  const model = models.find((model) => model.id === modelId)
-  if (!model) {
-    return NextResponse.json(
-      { error: `Model ${modelId} not found. Available models: ${models.map(m => m.id).join(', ')}` },
-      { status: 400 }
-    )
-  }
+    const model = models.find((model) => model.id === modelId)
+    if (!model) {
+      return NextResponse.json(
+        { 
+          error: `Model ${modelId} not found. Available models: ${models.map(m => m.id).join(', ')}`,
+          type: 'model_not_found'
+        },
+        { status: 400 }
+      )
+    }
 
   return createUIMessageStreamResponse({
     stream: createUIMessageStream({
@@ -93,4 +100,28 @@ export async function POST(req: Request) {
       },
     }),
   })
+  } catch (error: any) {
+    console.error('Chat API Error:', error)
+    
+    // Check for Vercel AI Gateway billing error
+    if (error.message?.includes('credit card') || error.message?.includes('free credits')) {
+      return NextResponse.json(
+        { 
+          error: 'Vercel AI Gateway Billing Required',
+          message: 'AI Gateway requires a valid credit card on file. Please visit https://vercel.com/account/billing to add a payment method and unlock your free credits.',
+          type: 'gateway_billing_required'
+        },
+        { status: 402 }
+      )
+    }
+    
+    return NextResponse.json(
+      { 
+        error: 'API Error',
+        message: error.message || 'Failed to process chat request',
+        type: 'api_error'
+      },
+      { status: 500 }
+    )
+  }
 }

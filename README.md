@@ -4,12 +4,28 @@ A powerful SaaS starter kit featuring an AI Agent powered by OpenAI that can int
 
 ## Features
 
-- **AI-Powered Chat Interface**: Intelligent assistant using OpenAI GPT-4
+- **AI-Powered Chat Interface**: Intelligent assistant using OpenAI GPT-3.5/4
 - **AWS Resource Management**: List and monitor EC2, S3, Lambda resources
 - **Cost Tracking**: Real-time AWS cost analysis and reporting
 - **Authentication System**: Secure user login and session management
 - **Responsive Design**: Works seamlessly on desktop and mobile
 - **Code Generation**: AI-assisted code generation and debugging
+
+## ⚠️ Important: Billing Requirements
+
+This application requires one of the following:
+
+### Option 1: OpenAI API (Recommended)
+- Create account at [OpenAI Platform](https://platform.openai.com)
+- Add payment method at [OpenAI Billing](https://platform.openai.com/account/billing)
+- Purchase credits ($5-10 is sufficient for testing)
+
+### Option 2: Vercel AI Gateway
+- Add credit card to [Vercel Billing](https://vercel.com/account/billing)
+- Get $10 free credits upon adding payment method
+- Access to GPT-5 and other premium models
+
+**Note**: The app will clearly display billing requirement messages if API credits are not available. This is not a code error but a configuration requirement.
 
 ## Quick Start
 

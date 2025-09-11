@@ -18,13 +18,15 @@ export async function POST(req: NextRequest) {
   try {
     const { messages, action } = await req.json()
 
-    // For demo purposes, use mock responses if OpenAI has issues or USE_MOCK_RESPONSES is set
-    const useMockResponses = process.env.USE_MOCK_RESPONSES === 'true' || !process.env.OPENAI_API_KEY
-
-    if (useMockResponses) {
-      console.log('Using mock responses for demo')
-      const { POST: mockHandler } = await import('./mock-route')
-      return mockHandler(req)
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { 
+          error: 'Configuration Required',
+          message: 'OpenAI API key not configured. Please add OPENAI_API_KEY to environment variables.',
+          type: 'configuration_error'
+        },
+        { status: 500 }
+      )
     }
 
     if (action === 'aws') {
@@ -32,7 +34,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ data: awsData })
     }
 
-    // Try OpenAI API
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
@@ -55,10 +56,27 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Agent API Error:', error)
     
-    // Always fall back to mock responses on any error
-    console.log('OpenAI error occurred, falling back to mock responses')
-    const { POST: mockHandler } = await import('./mock-route')
-    return mockHandler(req)
+    // Check if it's an OpenAI quota/billing error
+    const errorString = JSON.stringify(error)
+    if (errorString.includes('insufficient_quota') || error.code === 'insufficient_quota') {
+      return NextResponse.json(
+        { 
+          error: 'OpenAI API Billing Required',
+          message: 'Your OpenAI API key has exceeded its quota. Please add billing details to your OpenAI account at https://platform.openai.com/account/billing to continue using the AI features.',
+          type: 'insufficient_quota'
+        },
+        { status: 402 }
+      )
+    }
+    
+    return NextResponse.json(
+      { 
+        error: 'API Error',
+        message: error.message || 'Failed to process request',
+        type: 'api_error'
+      },
+      { status: 500 }
+    )
   }
 }
 

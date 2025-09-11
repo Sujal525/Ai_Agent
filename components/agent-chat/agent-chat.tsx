@@ -80,14 +80,38 @@ export function AgentChat() {
 
         const data = await response.json()
         
-        let content = data.message || 'I encountered an error. Please try again.'
-        if (data.isMockResponse) {
-          content += '\n\n_Note: Currently running in demo mode with mock responses._'
+        if (!response.ok) {
+          // Display error message clearly
+          let errorContent = '⚠️ **API Configuration Issue**\n\n'
+          
+          if (data.type === 'insufficient_quota') {
+            errorContent += '**OpenAI API Billing Required**\n\n'
+            errorContent += 'The OpenAI API key has exceeded its quota.\n\n'
+            errorContent += '**To fix this:**\n'
+            errorContent += '1. Go to [OpenAI Billing](https://platform.openai.com/account/billing)\n'
+            errorContent += '2. Add a payment method\n'
+            errorContent += '3. Purchase API credits ($5-10 is usually sufficient)\n\n'
+            errorContent += '_This is a billing issue with the OpenAI account, not a code error._'
+          } else if (data.type === 'configuration_error') {
+            errorContent += '**Configuration Required**\n\n'
+            errorContent += data.message || 'API key not configured.'
+          } else {
+            errorContent += data.error || 'Unknown error occurred'
+            errorContent += '\n\n' + (data.message || '')
+          }
+          
+          const errorMessage: Message = {
+            role: 'assistant',
+            content: errorContent,
+            timestamp: new Date(),
+          }
+          setMessages((prev) => [...prev, errorMessage])
+          return
         }
         
         const assistantMessage: Message = {
           role: 'assistant',
-          content,
+          content: data.message || 'I encountered an error. Please try again.',
           timestamp: new Date(),
         }
         setMessages((prev) => [...prev, assistantMessage])
