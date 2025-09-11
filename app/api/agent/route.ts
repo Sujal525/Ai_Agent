@@ -18,11 +18,13 @@ export async function POST(req: NextRequest) {
   try {
     const { messages, action } = await req.json()
 
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        { error: 'OpenAI API key not configured. Please add OPENAI_API_KEY to environment variables.' },
-        { status: 500 }
-      )
+    // For demo purposes, use mock responses if OpenAI has issues or USE_MOCK_RESPONSES is set
+    const useMockResponses = process.env.USE_MOCK_RESPONSES === 'true' || !process.env.OPENAI_API_KEY
+
+    if (useMockResponses) {
+      console.log('Using mock responses for demo')
+      const { POST: mockHandler } = await import('./mock-route')
+      return mockHandler(req)
     }
 
     if (action === 'aws') {
@@ -30,6 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ data: awsData })
     }
 
+    // Try OpenAI API
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
@@ -52,19 +55,10 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Agent API Error:', error)
     
-    // If OpenAI fails due to quota, use mock responses
-    if (error.message?.includes('quota') || error.code === 'insufficient_quota' || !process.env.OPENAI_API_KEY) {
-      const { POST: mockHandler } = await import('./mock-route')
-      return mockHandler(req)
-    }
-    
-    return NextResponse.json(
-      { 
-        error: error.message || 'Failed to process request',
-        details: process.env.NODE_ENV === 'development' ? error.toString() : undefined
-      },
-      { status: 500 }
-    )
+    // Always fall back to mock responses on any error
+    console.log('OpenAI error occurred, falling back to mock responses')
+    const { POST: mockHandler } = await import('./mock-route')
+    return mockHandler(req)
   }
 }
 
